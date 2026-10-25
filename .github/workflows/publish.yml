@@ -23,6 +23,11 @@ permissions:
   contents: read
   id-token: write # OIDC 必需，缺了就发不出去
 
+# 同一时间只允许一个发布任务，避免连推两个 tag 时并发写 registry
+concurrency:
+  group: publish-${{ github.ref_name }}
+  cancel-in-progress: false
+
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -50,5 +55,12 @@ jobs:
 
       # prepublishOnly 会在 publish 里再跑一遍 npm test，这是有意留的双保险；
       # 想省 CI 时间可以改成 npm publish --ignore-scripts
-      - name: 发布
+      - name: 发布（OIDC，无需 token / OTP）
         run: npm publish
+
+      - name: 发布结果
+        if: success()
+        run: |
+          echo "已发布 $(node -p "require('./package.json').name + '@' + require('./package.json').version")"
+          echo "https://www.npmjs.com/package/$(node -p "require('./package.json').name")"
+          echo "provenance: https://www.npmjs.com/package/$(node -p "require('./package.json').name")/v/$(node -p "require('./package.json').version")" 

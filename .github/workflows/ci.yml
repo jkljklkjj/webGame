@@ -1,0 +1,41 @@
+# 每次 push / PR 跑一遍全量自检，不发布。
+# 本项目零依赖、无 lockfile，所以没有 npm ci 这一步。
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['22', '24']
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node }}
+          package-manager-cache: false
+
+      - name: 版本信息
+        run: node -v && npm -v
+
+      # 冒烟（12 游戏 × 单/双人各 1200 帧）+ 关卡可解性 + 构建 + 构建产物 + npm 包体检
+      - name: npm test
+        run: npm test
+
+      - name: 打包体积
+        run: |
+          npm pack --dry-run 2>&1 | grep -E "package size|unpacked size|total files"
+          ls -l dist/
