@@ -1,0 +1,15 @@
+# 依赖
+node_modules/
+
+# 打包产物（打出来的 tgz 不进仓库；dist/ 要进，因为 package.json 的 files 会发它）
+*.tgz
+
+# 日志
+npm-debug.log*
+yarn-error.log*
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

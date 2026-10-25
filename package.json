@@ -1,0 +1,78 @@
+{
+  "name": "chargrid-arcade",
+  "version": "1.2.0",
+  "description": "字符终端风格的小游戏框架：纯 canvas 字符网格渲染，零依赖，一个 div 嵌进任意网页；12 个内置游戏，4 个支持同屏双人",
+  "type": "module",
+  "license": "MIT",
+  "author": "TERMINAL ARCADE contributors",
+  "keywords": [
+    "canvas",
+    "terminal",
+    "ascii",
+    "arcade",
+    "games",
+    "retro",
+    "character-grid",
+    "embed",
+    "game-framework",
+    "no-dependencies"
+  ],
+  "main": "./src/main.js",
+  "module": "./src/main.js",
+  "types": "./types/index.d.ts",
+  "style": "./styles.css",
+  "unpkg": "./dist/terminal-arcade.js",
+  "jsdelivr": "./dist/terminal-arcade.js",
+  "sideEffects": [
+    "./src/main.js",
+    "*.css"
+  ],
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "import": "./src/main.js",
+      "default": "./src/main.js"
+    },
+    "./style.css": "./styles.css",
+    "./games": {
+      "types": "./types/games.d.ts",
+      "import": "./src/games/index.js",
+      "default": "./src/games/index.js"
+    },
+    "./core/input.js": {
+      "types": "./types/core-input.d.ts",
+      "import": "./src/core/input.js",
+      "default": "./src/core/input.js"
+    },
+    "./core/*": "./src/core/*",
+    "./dist/terminal-arcade.js": "./dist/terminal-arcade.js",
+    "./dist/terminal-arcade.css": "./dist/terminal-arcade.css",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src/",
+    "types/",
+    "dist/",
+    "embed.js",
+    "styles.css",
+    "README.md",
+    "SDK.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "dev": "python -m http.server 8000",
+    "build": "node scripts/build.mjs",
+    "test": "node scripts/smoke.mjs && node scripts/games-test.mjs && node scripts/levels.mjs && node scripts/build.mjs && node scripts/bundle-test.mjs && node scripts/pkg-test.mjs",
+    "preview": "node scripts/preview.mjs",
+    "pack:check": "npm pack --dry-run",
+    "prepublishOnly": "npm test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zhenye/webGame.git"
+  },
+  "homepage": "https://github.com/zhenye/webGame#readme",
+  "bugs": {
+    "url": "https://github.com/zhenye/webGame/issues"
+  }
+}

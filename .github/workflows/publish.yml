@@ -1,0 +1,54 @@
+# 用 trusted publishing（OIDC）发布到 npm —— 全程不需要任何 token。
+#
+# 前置条件（缺一个都会 ENEEDAUTH）：
+#   1. npmjs.com → 包 → Settings → Trusted Publisher 已配好，且三个字段与下面完全一致：
+#        Organization or user = zhenye
+#        Repository           = webGame
+#        Workflow filename    = publish.yml
+#   2. package.json 的 repository.url 必须与这个仓库一致
+#   3. 必须在 GitHub-hosted runner 上跑（自托管 runner 目前不支持）
+#   4. 配置新建后 2 天内要有一次成功发布，否则配置过期
+#
+# 发布方式：打 tag 推上来，tag 必须等于 package.json 的 version（带 v 前缀）
+#   npm version patch && git push && git push --tags
+
+name: publish
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch: # 允许在 Actions 页面手动触发（调试用）
+
+permissions:
+  contents: read
+  id-token: write # OIDC 必需，缺了就发不出去
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false # 本包零依赖、无 lockfile，不缓存
+
+      # 本项目没有依赖，也没有 package-lock.json，所以不要用 npm ci（会直接报错）
+      - name: 校验 tag 与 package.json 版本一致
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          want="v$(node -p "require('./package.json').version")"
+          got="${GITHUB_REF_NAME}"
+          echo "tag=${got}  package.json=${want}"
+          test "$got" = "$want" || { echo "::error::tag 与 version 不一致"; exit 1; }
+
+      - name: 自检（冒烟 / 关卡 / 构建 / npm 包体检）
+        run: npm test
+
+      # prepublishOnly 会在 publish 里再跑一遍 npm test，这是有意留的双保险；
+      # 想省 CI 时间可以改成 npm publish --ignore-scripts
+      - name: 发布
+        run: npm publish

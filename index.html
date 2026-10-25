@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TERMINAL ARCADE — 字符终端小游戏框架</title>
+<link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+<div class="wrap">
+
+  <pre class="banner">== TERMINAL ARCADE ============================================== v1.2</pre>
+  <p class="subtitle">
+    字符网格驱动的小游戏合集 · <b>12</b> 个游戏 · <b>4</b> 个支持同屏双人 · 零依赖 · 一个 <b>div</b> 就能接进任何页面
+  </p>
+
+  <!-- ================= 游戏本体 ================= -->
+  <div id="arcade" data-arcade></div>
+
+  <!-- ================= 说明 ================= -->
+  <section>
+    <h2>接入方式</h2>
+    <p>三种都可以，选一个就行。</p>
+
+    <pre><span class="c">&lt;!-- 1. 最简单：一行标签，自动挂载 --&gt;</span>
+&lt;link rel="stylesheet" href="styles.css"&gt;
+&lt;div data-arcade&gt;&lt;/div&gt;
+&lt;script src="embed.js"&gt;&lt;/script&gt;
+
+<span class="c">&lt;!-- 指定启动的游戏和高度 --&gt;</span>
+&lt;div data-arcade data-game="hockey" data-height="520" data-muted&gt;&lt;/div&gt;</pre>
+
+    <pre><span class="c">// 2. ES module：自定义挂载点</span>
+<span class="k">import</span> { mount } <span class="k">from</span> <span class="s">'./src/main.js'</span>;
+
+<span class="k">const</span> arcade = mount(<span class="s">'#arcade'</span>, { game: <span class="s">'snake'</span> });
+<span class="c">// 返回值就是引擎实例</span>
+arcade.startGame(4);   <span class="c">// 直接切到第 5 个游戏</span>
+arcade.destroy();      <span class="c">// 卸载，解绑所有监听</span></pre>
+
+    <pre><span class="c">// 3. iframe（完全隔离样式时）</span>
+&lt;iframe src="index.html" width="860" height="640" style="border:0"&gt;&lt;/iframe&gt;</pre>
+
+    <pre><span class="c">// 4. 单文件构建：没有服务器也能开（双击 dist/demo.html）</span>
+$ npm run build
+$ open dist/demo.html
+
+<span class="c">// 产物三件套，随便拷走：</span>
+dist/terminal-arcade.js     <span class="c">// 103 KB，一个 IIFE，无 import</span>
+dist/terminal-arcade.css
+dist/demo.html              <span class="c">// 全内联，离线可跑</span></pre>
+  </section>
+
+  <section>
+    <h2>游戏列表</h2>
+    <table>
+      <thead>
+        <tr><th>#</th><th>游戏</th><th>双人</th><th>操作</th><th>目标</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="g">1</td><td class="k">PONG 乒乓</td><td>左右对打</td><td>W/S · ↑↓ · 鼠标</td><td>先得 7 分</td></tr>
+        <tr><td class="g">2</td><td class="k">AIR HOCKEY 冰球</td><td>左右对打</td><td>WASD · 方向键 · 拖拽</td><td>先得 7 分</td></tr>
+        <tr><td class="g">3</td><td class="k">SNAKE 贪吃蛇</td><td>互撞对战</td><td>WASD / 方向键</td><td>吃满不撞墙</td></tr>
+        <tr><td class="g">4</td><td class="k">BREAKOUT 打砖块</td><td>—</td><td>←→ · 空格发球</td><td>清空砖块推关</td></tr>
+        <tr><td class="g">5</td><td class="k">TETRIS 俄罗斯方块</td><td>—</td><td>←→ ↑ Z 空格</td><td>消行拿分</td></tr>
+        <tr><td class="g">6</td><td class="k">2048</td><td>—</td><td>方向键 / WASD</td><td>合并出 2048</td></tr>
+        <tr><td class="g">7</td><td class="k">MINESWEEPER 扫雷</td><td>—</td><td>方向键 · 空格 · F</td><td>清出所有安全格</td></tr>
+        <tr><td class="g">8</td><td class="k">INVADERS 太空侵略者</td><td>—</td><td>←→ · 空格</td><td>打光外星人</td></tr>
+        <tr><td class="g">9</td><td class="k">RUNNER 奔跑者</td><td>—</td><td>空格（可二段跳）</td><td>跑得越远越好</td></tr>
+        <tr><td class="g">10</td><td class="k">SOKOBAN 推箱子</td><td>—</td><td>方向键 · U 撤销</td><td>4 关，箱子归位</td></tr>
+        <tr><td class="g">11</td><td class="k">LIGHTS OUT 关灯</td><td>—</td><td>方向键 · 空格 · 鼠标点</td><td>把所有灯熄灭</td></tr>
+        <tr><td class="g">12</td><td class="k">DUEL 双人对射</td><td>坦克互射</td><td>WASD+F / 方向键+Enter</td><td>打掉对方 3 格血</td></tr>
+      </tbody>
+    </table>
+    <p>全局按键：<b>ENTER</b> 开始 · <b>ESC</b> 暂停 · <b>R</b> 重开 · <b>M</b> 静音 · <b>/</b> 帮助。</p>
+    <p>触屏：滑动 = 方向键，轻点 = 空格；乒乓和冰球可以直接用手指拖。</p>
+
+    <h2>双人</h2>
+    <p>
+      在菜单里按 <b>←→</b> 切换单人 / 双人（标题栏会显示 <b>1 PLAYER</b> 或 <b>2 PLAYERS</b>），
+      选择会按游戏记住。两个人的键位完全分开：
+    </p>
+    <table>
+      <thead><tr><th></th><th>移动</th><th>动作</th></tr></thead>
+      <tbody>
+        <tr><td class="k">P1</td><td>W A S D</td><td>F / 空格 / 左 Shift</td></tr>
+        <tr><td class="k">P2</td><td>↑ ↓ ← →</td><td>Enter / 右 Shift / 小键盘 0</td></tr>
+      </tbody>
+    </table>
+    <p>触屏也能双人：先按下的手指归 P1，第二根归 P2。暂停层会同时列出两人的键位。</p>
+  </section>
+
+  <section>
+    <h2>自己加一个游戏</h2>
+    <p>游戏 = 一个对象 + 一个 <code>create()</code>。引擎只要求 <code>update(dt)</code> 和 <code>render(screen)</code>。</p>
+
+    <pre><span class="k">import</span> { register, GAMES } <span class="k">from</span> <span class="s">'./src/main.js'</span>;
+
+register({
+  id: <span class="s">'dots'</span>,
+  name: <span class="s">'DOTS'</span>,
+  cn: <span class="s">'点阵'</span>,
+  desc: <span class="s">'按空格撒点'</span>,
+  keys: [<span class="s">'空格 撒一个点'</span>],
+
+  create(api) {
+    <span class="k">const</span> { screen, input, audio } = api;
+    <span class="k">const</span> pts = [];
+
+    <span class="k">return</span> {
+      reset() { pts.length = 0; },
+
+      update(dt) {
+        <span class="k">if</span> (input.pressed(<span class="s">'space'</span>)) {
+          pts.push({ x: api.w &gt;&gt; 1, y: api.h &gt;&gt; 1 });
+          audio.blip();
+          api.setStatus(<span class="s">`点 ${pts.length}`</span>);
+        }
+      },
+
+      render(s) {
+        s.clear(<span class="s">'bg'</span>);
+        s.box(0, 0, api.w, api.h, <span class="s">'accent2'</span>);
+        pts.forEach((p, i) =&gt; s.put(p.x + i, p.y + i, <span class="s">'*'</span>, <span class="s">'accent'</span>));
+      },
+    };
+  },
+});</pre>
+  </section>
+
+  <section>
+    <h2>API 速查</h2>
+    <table>
+      <thead><tr><th>名字</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td class="k">screen</td><td>字符缓冲：<code>put / write / fill / box / hline / vline / writeCenter / writeRight / clear</code></td></tr>
+        <tr><td class="k">input</td><td>合并层：<code>isDown(n)</code> <code>pressed(n)</code> <code>axisX/axisY()</code> <code>dir()</code> <code>pointAt(n)</code></td></tr>
+        <tr><td class="k">input.p1 / p2</td><td>玩家层：同样的接口，只认自己那套键（<code>up down left right fire</code>）</td></tr>
+        <tr><td class="k">players</td><td>本局人数 <code>1</code> 或 <code>2</code>，在 <code>reset()</code> 里读</td></tr>
+        <tr><td class="k">audio</td><td><code>beep(freq, dur, type)</code> <code>blip/hit/bounce/score/win/lose</code></td></tr>
+        <tr><td class="k">w / h</td><td>可用网格尺寸（80 × 35，最后一行是状态栏）</td></tr>
+        <tr><td class="k">setStatus(s)</td><td>写进底部状态栏</td></tr>
+        <tr><td class="k">over(msg) / won(msg)</td><td>结束本局并弹出结果层</td></tr>
+        <tr><td class="k">saveBest(n)</td><td>刷新最高分（localStorage）</td></tr>
+        <tr><td class="k">restart() / exit()</td><td>重开 / 回菜单</td></tr>
+        <tr><td class="k">dt</td><td>固定步长 1/60 秒，物理直接按秒算</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>目录结构</h2>
+    <pre>webGame/
+├─ index.html          demo 页面
+├─ embed.js            一行接入用的加载器
+├─ styles.css          终端风样式
+├─ dist/               npm run build 产物（单文件，离线可用）
+├─ scripts/
+│  ├─ build.mjs        极简 ESM -> IIFE 打包器
+│  ├─ smoke.mjs        11 个游戏各跑 1200 帧随机输入
+│  ├─ levels.mjs       BFS 校验推箱子每关可解
+│  ├─ bundle-test.mjs  伪 DOM 里跑一遍构建产物
+│  └─ preview.mjs      把字符网格打到终端看排版
+└─ src/
+   ├─ main.js          注册表 + mount + 自动挂载
+   ├─ core/
+   │  ├─ screen.js     字符缓冲 + 批量渲染（宽字符对齐）
+   │  ├─ engine.js     循环 / 状态机 / 菜单 / 覆盖层
+   │  ├─ input.js      键盘 + 指针 + 触屏滑动归一化
+   │  ├─ audio.js      WebAudio 蜂鸣器
+   │  ├─ palette.js    调色板
+   │  └─ util.js       数学 + 显示宽度工具
+   └─ games/
+      ├─ index.js      游戏总目录，加游戏只改这里
+      └─ *.js          11 个游戏，一个文件一个</pre>
+  </section>
+
+  <footer>
+    TERMINAL ARCADE · 纯 canvas 字符渲染 · 无依赖。<br />
+    开发时用 ES module，需要静态服务器：<code>python -m http.server 8000</code>；
+    想离线双击运行就先 <code>npm run build</code>，打开 <code>dist/demo.html</code>。
+  </footer>
+</div>
+
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
