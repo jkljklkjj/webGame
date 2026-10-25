@@ -233,6 +233,8 @@ node scripts/preview.mjs tetris --ansi   # 用真彩把配色也打出来
 npm run pack:check                 # 看看 npm publish 会传哪些文件
 ```
 
+发布流程（含 OTP 是什么、GitHub Actions trusted publishing 四步）见 [`RELEASING.md`](./RELEASING.md)。
+
 没有浏览器也能验证：`preview.mjs` 直接在终端里画出 80×36 的字符网格，排版问题一眼就能看出来。
 
 ## 说明

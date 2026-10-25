@@ -2,7 +2,7 @@
 #
 # 前置条件（缺一个都会 ENEEDAUTH）：
 #   1. npmjs.com → 包 → Settings → Trusted Publisher 已配好，且三个字段与下面完全一致：
-#        Organization or user = zhenye
+#        Organization or user = jkljklkjj
 #        Repository           = webGame
 #        Workflow filename    = publish.yml
 #   2. package.json 的 repository.url 必须与这个仓库一致

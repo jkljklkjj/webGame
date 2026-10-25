@@ -1,105 +1,112 @@
 # 发版手册
 
-两条路，二选一。
+仓库：`https://github.com/jkljklkjj/webGame`
+包名：`chargrid-arcade`（npm 上 `terminal-arcade` 已被他人占用）
 
 ---
 
-## 路线 A：手动发布（今天就能用）
+## 0. 先搞清楚 OTP 是什么
 
-```bash
-npm test
-npm publish --ignore-scripts --otp=123456   # 换成 authenticator 里的实时 6 位码
-```
+**OTP = One-Time Password，一次性密码**，这里特指 TOTP 的 **6 位数字**。
 
-- 要 TOTP（6 位码）；2FA 是 passkey 的话走不了这条。
-- 2027-01 之前，勾了 *Bypass 2FA* 的 granular token 也还能直接发布，但那是死路，别投资。
-- 长期手动发版也可以，只是每次要敲码。
+- **不能随便写。** 服务器用「你的共享密钥 + 当前时间」独立算出一个值来比对，错一位就是失败（表现为 `EOTP`，或直接 `403 ... Two-factor authentication ... required`）。
+- **从哪来**：当初在 npmjs.com 开启 2FA 时，页面给过一个二维码/密钥串，你用 Google Authenticator、Microsoft Authenticator、1Password、Authy、Bitwarden 这类 App 扫进去。之后 App 里 `npmjs.com` 那一条会每 30 秒刷新一次 6 位数字，**发版时读当前显示的那个**。
+- **30 秒过期，且一码只能用一次**。所以顺序很重要：先 `npm test`，测试跑完再打开 App 读数，立刻执行 publish。
+- **30 秒不够用怎么办**：`npm publish` 会自动跑 `prepublishOnly`（约 10 秒），容易吃掉窗口 —— 先手动 `npm test`，再用 `--ignore-scripts` 发布（下面第 1 步就是这么写的）。
+
+### 你没有这个 App 条目怎么办
+
+去 https://www.npmjs.com/settings/~/profile 看 **Two-factor authentication** 那一栏：
+
+| 状态 | 含义 | 能发版吗 |
+| --- | --- | --- |
+| `Authenticator app`（TOTP） | 有 6 位码 | ✅ 走本文档 |
+| `Security key` / passkey | **根本没有 6 位码** | ❌ `--otp` 无解，只能走「bypass 2FA token（2027-01 前有效）」或等 CI |
+| 未开启 | 那 403 是别的原因 | 先查 `npm profile get` 的 `two-factor auth` |
 
 ---
 
-## 路线 B：GitHub Actions + trusted publishing（零 token）
+## 1. 手动发第一个版本（必须做，绕不过）
 
-### 阶段 1（一次性）：先手动把首版发上去
-
-npm **不支持用 OIDC 发第一个版本**（`npm/cli#8544` 仍 open）：
+npm **不支持用 OIDC 发首版**（`npm/cli#8544` 仍是 open 状态）：
 
 > "it's not possible to publish the initial version of a package using OIDC, it needs to be published manually or using a token."
 
-所以 1.2.0 必须走路线 A 发一次。发完确认：
+包在 npm 上存在之后，才能配置 Trusted Publisher。
 
-```bash
-npm view chargrid-arcade version      # 1.2.0
+```cmd
+cd /d D:\lora\webGame
+npm login                                  :: 走仓库里的 .npmrc → registry.npmjs.org
+npm test                                   :: 先跑完，避免 OTP 过期
+npm publish --ignore-scripts --otp=834170   :: 换成 App 里此刻的 6 位码，不是占位符
 ```
 
-### 阶段 2：推到 GitHub
+验收：
 
-仓库地址必须和 `package.json` 的 `repository.url` 一致。本项目填写的是
-`https://github.com/zhenye/webGame`，**如果你的用户名或仓库名不同，先改过来**：
-
-```bash
-npm pkg set repository.type=git
-npm pkg set repository.url=git+https://github.com/<你的用户名>/<仓库名>.git
-npm pkg set homepage=https://github.com/<你的用户名>/<仓库名>#readme
-npm pkg set bugs.url=https://github.com/<你的用户名>/<仓库名>/issues
+```cmd
+npm view chargrid-arcade version           :: 应输出 1.2.0
 ```
 
-然后建仓库并推（本目录已是 git 仓库、已提交过首个 commit）：
+## 2. 推到 GitHub
 
-```bash
-# 在 GitHub 上新建空仓库（不要勾 README / .gitignore），然后：
-git remote add origin https://github.com/<你的用户名>/<仓库名>.git
+仓库地址已写进 `package.json`（`repository.url = git+https://github.com/jkljklkjj/webGame.git`），
+**Trusted publishing 校验的就是这个字段**，别改错。本目录已是 git 仓库（`main` 分支、已提交）：
+
+```cmd
+git remote add origin https://github.com/jkljklkjj/webGame.git
 git push -u origin main
 ```
 
-### 阶段 3：配置 Trusted Publisher
+## 3. 配置 Trusted Publisher
 
-npmjs.com → 你的包 → **Settings** → **Trusted Publisher** → 选 **GitHub Actions**：
+npmjs.com → `chargrid-arcade` → **Settings** → **Trusted Publisher** → 选 **GitHub Actions**：
 
 | 字段 | 填什么 |
 | --- | --- |
-| Organization or user | `zhenye`（GitHub 用户名，不是 npm 用户名） |
+| Organization or user | `jkljklkjj` |
 | Repository | `webGame` |
 | Workflow filename | `publish.yml`（只写文件名，含 `.yml`，**区分大小写**） |
 | Environment name | 留空 |
-| Allowed actions | 默认只允许 `npm stage publish`；**要允许 `npm publish` 就得勾上**（见下） |
+| Allowed actions | ⚠️ **必须勾上 `npm publish`** |
 
-⚠️ 两个坑：
+两个坑：
 
-1. 新建的配置**必须在 2 天内完成一次成功发布**才生效绑定，否则过期作废、要删掉重建。所以配完立刻发下一个版本。
-2. 2026-09 之后创建的配置**默认只允许 stage publish**。如果你不想用暂存流程，务必在 Allowed actions 里把 **`npm publish`** 也勾上，否则 CI 会以 403 失败。
+1. **Allowed actions 默认不含 `npm publish`。** 2026-09 之后新建的配置默认只允许 `npm stage publish`，不勾就永远 403。
+2. **配置建好后 2 天内必须有一次成功发布**，否则配置过期作废，只能删掉重建。所以配完马上做第 4 步。
 
-### 阶段 4：验证 CI 能发
+## 4. 用 CI 发一个版本验证
 
-```bash
-npm version patch        # 1.2.1，会顺带打 tag
+```cmd
+npm version patch          :: 1.2.0 → 1.2.1，顺带打 tag v1.2.1
 git push && git push --tags
 ```
 
-Actions 里应看到 `publish` 跑通，且包页面出现 **Provenance**（公开仓库 + 公开包自动生成，不用加 `--provenance`）。
-
-成功后建议加固：包 → Settings → **Publishing access** → 选
-**"Require two-factor authentication and disallow tokens"**，把 token 通道彻底关掉，只留 OIDC。
+- tag 必须是 `v1.2.1` 这种形式，且与 `package.json` 的 `version` 一致（workflow 里有硬校验，不一致直接失败）。
+- Actions 跑通后，包页面会出现 **Provenance** 徽章（公开仓库 + 公开包自动生成，不需要 `--provenance`）。
+- 成功后加固：包 → Settings → **Publishing access** → 选 **"Require two-factor authentication and disallow tokens"**，把 token 通道彻底关掉，只留 OIDC。
 
 ---
 
 ## 日常发版（配置好之后）
 
 ```bash
-npm test                 # 本地先过一遍
-npm version patch        # 或 minor / major
+npm test
+npm version patch          # 或 minor / major
 git push && git push --tags
 ```
 
-- tag 必须是 `v1.2.1` 这种形式，且与 `package.json` 的 version 一致——workflow 里有一步硬校验，不一致直接失败。
-- `prepublishOnly` 会在 CI 里再跑一遍 `npm test`（workflow 里已经显式跑过一次，双保险）。
+全程不碰 token、不碰 OTP。
+
+---
 
 ## 排错
 
 | 现象 | 原因 |
 | --- | --- |
-| `ENEEDAUTH` / `Unable to authenticate` | workflow 文件名没对上（含 `.yml`、大小写）、仓库名不符，或缺 `id-token: write` |
-| `403 ... two-factor authentication or granular access token` | 包的 Publishing access 还要求 token/2FA，但 Trusted Publisher 没匹配上；或 Allowed actions 里没勾 `npm publish` |
+| `403 ... Two-factor authentication or granular access token`（本地） | `--otp` 没带，或填了占位符/过期码 → 见第 0 节 |
+| `EOTP`：Incorrect or expired OTP | 码错了或超过 30 秒，重新读一次 |
+| CI 报 `ENEEDAUTH` / `Unable to authenticate` | workflow 文件名没对上（含 `.yml`、大小写）、仓库名不符，或漏了 `id-token: write` |
+| CI 报 `403`，本地却正常 | Trusted Publisher 的 Allowed actions 没勾 `npm publish`；或 `repository.url` 与仓库不一致 |
 | `npm ci` 报 `requires package-lock.json` | 本项目零依赖、无 lockfile，不要用 `npm ci`，直接 `npm test` |
-| 配置看起来对但一直失败 | `repository.url` 与仓库不一致（fork 的仓库最容易中招） |
-| 自托管 runner 失败 | trusted publishing 目前只支持 GitHub-hosted runner |
 | 配置突然不可用 | 建好后 2 天内没有成功发布，配置已过期，删掉重建 |
+| 自托管 runner 失败 | trusted publishing 目前只支持 GitHub-hosted runner |
