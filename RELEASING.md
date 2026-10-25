@@ -110,3 +110,42 @@ git push && git push --tags
 | `npm ci` 报 `requires package-lock.json` | 本项目零依赖、无 lockfile，不要用 `npm ci`，直接 `npm test` |
 | 配置突然不可用 | 建好后 2 天内没有成功发布，配置已过期，删掉重建 |
 | 自托管 runner 失败 | trusted publishing 目前只支持 GitHub-hosted runner |
+
+---
+
+## 附：2FA 失联（网页端和手机端都过不去）怎么办
+
+结论：**不要重新注册账号**。包所有权无法在没有 2FA 的情况下转移，新账号只会让你彻底丢掉 `chargrid-arcade`。
+
+入口统一在登录页：https://www.npmjs.com/login → 输密码 → 到 **Two-Factor Authentication** 页面 → 点
+**"Use a recovery code or request a reset"**。
+
+### 路线 A：还有恢复码（开 2FA 时给的 `npm-recovery-codes.txt`）
+
+1. 输入一个没用过的恢复码，登录
+2. **立刻**去 Account → Two-Factor Authentication → **Modify 2FA** → 添加新的认证器（TOTP）
+3. 等 **72 小时**安全冻结自动到期
+
+冻结期内（2026-09 起对所有账号生效，不可提前解除）：
+
+| 允许 | 禁止 |
+| --- | --- |
+| 登录、浏览/下载/安装包、改密码、**添加新的 2FA 方法** | 发布/取消发布、创建 token、改包设置、改 maintainer、改组织成员、改 2FA 方法本身 |
+
+### 路线 B：恢复码也没了
+
+1. 同一链接 → 底部 **"Try recovering your account"** → **"Start Account Recovery"**
+2. 用注册邮箱收 OTP 验证（`2998568539@qq.com`）
+3. **How can we help?** 选 **Reset my two-factor authentication (2FA)**
+4. 点 **"Connect to GitHub"** 关联 `github.com/jkljklkjj`——`package.json` 的 `repository.url` 指向这个仓库，是最硬的所有权证据
+5. 提交：https://www.npmjs.com/support?inquire=account
+
+工单里一并写：包名、`1.2.1` 发布时间、maintainer 邮箱、GitHub 仓库地址。
+
+### 冻结期间的现实约束
+
+- **无法撤销已泄露的 token**：手上的 bypass token 是唯一写入通道，离线备份（密码管理器），不要再贴到任何聊天或提交进仓库。
+- **无法配置 Trusted Publisher**：CI 发布路线要等解冻。
+- **建议定期核对** `npm view chargrid-arcade versions`：出现你没发过的版本 = token 被滥用，立即走支持渠道报安全事件。
+- **时间窗口**：2027-01 起 bypass-2FA token 不能直接发布（只剩 stage），恢复必须在此前完成。
+- 暂存区里的旧版本（如 `1.2.0` staged）在解冻前无法 reject，但 `include-staged=false`，消费者装不到，不紧急。

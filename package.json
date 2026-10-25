@@ -1,6 +1,6 @@
 {
   "name": "chargrid-arcade",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "字符终端风格的小游戏框架：纯 canvas 字符网格渲染，零依赖，一个 div 嵌进任意网页；12 个内置游戏，4 个支持同屏双人",
   "type": "module",
   "license": "MIT",
