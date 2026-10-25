@@ -1,0 +1,13 @@
+# 统一换行：仓库内与发布产物都用 LF（CI 在 Linux 上打包，避免 LF/CRLF 来回抖动）
+* text=auto eol=lf
+
+# 光栅资源保持二进制
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+
+# Windows 脚本保留 CRLF
+*.cmd text eol=crlf
+*.bat text eol=crlf
