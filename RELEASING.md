@@ -113,97 +113,60 @@ git push && git push --tags
 
 ---
 
-## 附：2FA 失联（网页端和手机端都过不去）怎么办
+## 附 A：2FA 只在 approve / reject 上失败（其他都正常）
 
-结论：**不要重新注册账号**。包所有权无法在没有 2FA 的情况下转移，新账号只会让你彻底丢掉 `chargrid-arcade`。
+症状：能登录 npmjs.com、能发布、能改包设置，但 `npm stage approve` / `npm stage reject` 无论怎么输 6 位码都过不去（`npm stage list` / `view` 正常）。
 
-入口统一在登录页：https://www.npmjs.com/login → 输密码 → 到 **Two-Factor Authentication** 页面 → 点
-**"Use a recovery code or request a reset"**。
+这不是账号被锁，只是**暂存发布（staged publishing）这条路径的 2FA 校验坏了**。影响面很小：
 
-### 路线 A：还有恢复码（开 2FA 时给的 `npm-recovery-codes.txt`）
-
-1. 输入一个没用过的恢复码，登录
-2. **立刻**去 Account → Two-Factor Authentication → **Modify 2FA** → 添加新的认证器（TOTP）
-3. 等 **72 小时**安全冻结自动到期
-
-冻结期内（2026-09 起对所有账号生效，不可提前解除）：
-
-| 允许 | 禁止 |
+| 受影响 | 不受影响 |
 | --- | --- |
-| 登录、浏览/下载/安装包、改密码、**添加新的 2FA 方法** | 发布/取消发布、创建 token、改包设置、改 maintainer、改组织成员、改 2FA 方法本身 |
+| 批准/拒绝暂存版本 | 直接 `npm publish`（用 token） |
+| 清理暂存区残留 | 登录、改包设置、配 Trusted Publisher |
+| | 删除 token、OIDC/CI 发布 |
 
-### 路线 B：恢复码也没了
+处理办法：
 
-1. 同一链接 → 底部 **"Try recovering your account"** → **"Start Account Recovery"**
-2. 用注册邮箱收 OTP 验证（`2998568539@qq.com`）
-3. **How can we help?** 选 **Reset my two-factor authentication (2FA)**
-4. 点 **"Connect to GitHub"** 关联 `github.com/jkljklkjj`——`package.json` 的 `repository.url` 指向这个仓库，是最硬的所有权证据
-5. 提交：https://www.npmjs.com/support?inquire=account
-
-工单里一并写：包名、`1.2.1` 发布时间、maintainer 邮箱、GitHub 仓库地址。
-
-### 冻结期间的现实约束
-
-- **无法撤销已泄露的 token**：手上的 bypass token 是唯一写入通道，离线备份（密码管理器），不要再贴到任何聊天或提交进仓库。
-- **无法配置 Trusted Publisher**：CI 发布路线要等解冻。
-- **建议定期核对** `npm view chargrid-arcade versions`：出现你没发过的版本 = token 被滥用，立即走支持渠道报安全事件。
-- **时间窗口**：2027-01 起 bypass-2FA token 不能直接发布（只剩 stage），恢复必须在此前完成。
-- 暂存区里的旧版本（如 `1.2.0` staged）在解冻前无法 reject，但 `include-staged=false`，消费者装不到，不紧急。
+1. **暂存区残留不用管。** `include-staged=false` 是默认值，暂存版本不会被 `npm install` 解析到，也不会顶掉 `latest`。别人也 approve 不了（唯一的 maintainer 就是你自己）。它只是台账上一条记录，等 bug 修好再 reject 即可。
+2. **发版不要走 `npm stage publish`。** 用直接发布：`npm publish --ignore-scripts --otp=<码>` 或 CI + Trusted Publisher（OIDC 在发布时不需要任何 OTP）。
+3. **Trusted Publisher 照常配**：npmjs.com → 包 → Settings → Trusted Publisher，`Allowed actions` 里勾上 `npm publish`（不勾的话 CI 只能 stage，又会撞回同一个坏掉的 2FA）。
+4. 想确认是不是同一个 bug：`npm stage view <stage-id>` 能看，`approve` 报错 → 就是这条路径的问题，与账号整体 2FA 无关。
 
 ---
 
-## 附：账号冻结期作战计划（2FA 短期无法修复时）
+## 附 B：2FA 完全过不去（连网页登录都进不了）
 
-前提：账号被锁数月，且 2027-01 起 bypass-2FA token 将失去直接发布能力。两者叠加 = 冻结期到 1 月中旬为止。
+到这一步才有可能需要走恢复流程。入口：https://www.npmjs.com/login → 输密码 →
+**Two-Factor Authentication** 页面 → 点 **"Use a recovery code or request a reset"**。
 
-### 冻结期内唯一还能做的事
+**有恢复码**（开 2FA 时给的 `npm-recovery-codes.txt`）：
 
-| 能做 | 不能做 |
-| --- | --- |
-| 用**现有** bypass token 直接 `npm publish` | 建新 token、吊销旧 token |
-| 改 GitHub 仓库、README、文档、代码 | 配 Trusted Publisher、改包设置 |
-| 让用户从 GitHub 安装（见下） | reject/approve 暂存版本、unpublish、deprecate |
+1. 输入一个没用过的恢复码登录
+2. 立刻去 Account → Two-Factor Authentication → **Modify 2FA** → 添加新的认证器
+3. 等 **72 小时**安全冻结自动到期（2026-09 起对所有账号生效，不可提前解除）
 
-### 必须保住的东西
+冻结期内允许：登录、浏览/安装包、改密码、**添加新的 2FA 方法**。禁止：发布、创建 token、改包设置、改 maintainer。
 
-**现有 bypass token = 唯一写入通道。** 存进密码管理器并留一份离线备份。丢了就再也发不了版（建新 token 需要 2FA）。不要再把它贴进任何对话、日志、仓库或 CI 配置。
+**没有恢复码**：
 
-### 工单里要追加的三个诉求
+1. 同一链接 → 底部 **"Try recovering your account"** → **"Start Account Recovery"**
+2. 用注册邮箱收 OTP 验证
+3. 工单 **How can we help?** 选 **Reset my two-factor authentication (2FA)**
+4. 点 **"Connect to GitHub"** 关联 `github.com/jkljklkjj`（`package.json` 的 `repository.url` 指向它，是最硬的所有权证据）
+5. 提交：https://www.npmjs.com/support?inquire=account
 
-客服能在服务端吊销 token，本地 CLI 做不到：
+工单里一并写：包名、最新版本与发布时间、maintainer 邮箱、GitHub 仓库地址。
 
-1. 重置 2FA
-2. **吊销该账号全部 access token**，说明其中一个已在第三方对话中泄露，给前 8 位字符帮助定位
-3. 确认最近一个版本之后没有未授权发布
+---
 
-### 免费兜底通道（已验证可用）
+## 附 C：免费兜底安装通道
 
-```bash
-npm i github:jkljklkjj/webGame          # 实测装到 1.2.1，文件齐全
-```
-
-npm 上没有新版本时，用户可以直连 GitHub 仓库安装。CDN 也可走 GitHub 分支：
-`https://cdn.jsdelivr.net/gh/jkljklkjj/webGame@main/dist/terminal-arcade.js`（未实测连通性）。
-
-### 发版纪律
-
-- **不要**为 README、文档、注释等非功能改动发版——每发一次都在消耗一个撤不掉的凭据。
-- 攒改动，等两件事之一：2FA 恢复（走 CI，零 token）或攒出实质内容后发一个 `1.3.0` 作为冻结前最终版。
-- 冻结期内的文档改进只走 GitHub，不进 npm。
-
-### 每周监控
+npm 上没有可用新版本时，用户可以直连 GitHub 仓库安装（已实测）：
 
 ```bash
-npm view chargrid-arcade versions
+npm i github:jkljklkjj/webGame
 ```
 
-出现未发布的版本号 = token 被滥用。应急顺序：GitHub README 顶部加警告（不需要 npm 权限）→ 工单报安全事件。
+CDN 可走 GitHub 分支：`https://cdn.jsdelivr.net/gh/jkljklkjj/webGame@main/dist/terminal-arcade.js`（未实测连通性）。
 
-### 解冻后立刻做的 6 件事
-
-1. `npm stage reject <staged 1.2.0 的 stage-id>`（`npm stage list` 取 id）
-2. 配 Trusted Publisher：`jkljklkjj` / `webGame` / `publish.yml`，**Allowed actions 勾上 `npm publish`**
-3. `npm version patch && git push --follow-tags`，验证 CI 能发（配置 2 天内必须首发成功）
-4. 吊销所有旧 token（尤其是泄露过的那个）
-5. 包的 Settings → Publishing access → **Require two-factor authentication and disallow tokens**
-6. 确认浏览器里 2FA 换成可用设备 + 重新生成一组恢复码并妥善保存
+冻结期内（无法发版时）的纪律：**不要为 README、文档、注释这类非功能改动发版**，攒改动等 CI 通路可用后一次性发；文档改进只走 GitHub。
