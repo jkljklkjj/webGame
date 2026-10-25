@@ -149,3 +149,61 @@ git push && git push --tags
 - **建议定期核对** `npm view chargrid-arcade versions`：出现你没发过的版本 = token 被滥用，立即走支持渠道报安全事件。
 - **时间窗口**：2027-01 起 bypass-2FA token 不能直接发布（只剩 stage），恢复必须在此前完成。
 - 暂存区里的旧版本（如 `1.2.0` staged）在解冻前无法 reject，但 `include-staged=false`，消费者装不到，不紧急。
+
+---
+
+## 附：账号冻结期作战计划（2FA 短期无法修复时）
+
+前提：账号被锁数月，且 2027-01 起 bypass-2FA token 将失去直接发布能力。两者叠加 = 冻结期到 1 月中旬为止。
+
+### 冻结期内唯一还能做的事
+
+| 能做 | 不能做 |
+| --- | --- |
+| 用**现有** bypass token 直接 `npm publish` | 建新 token、吊销旧 token |
+| 改 GitHub 仓库、README、文档、代码 | 配 Trusted Publisher、改包设置 |
+| 让用户从 GitHub 安装（见下） | reject/approve 暂存版本、unpublish、deprecate |
+
+### 必须保住的东西
+
+**现有 bypass token = 唯一写入通道。** 存进密码管理器并留一份离线备份。丢了就再也发不了版（建新 token 需要 2FA）。不要再把它贴进任何对话、日志、仓库或 CI 配置。
+
+### 工单里要追加的三个诉求
+
+客服能在服务端吊销 token，本地 CLI 做不到：
+
+1. 重置 2FA
+2. **吊销该账号全部 access token**，说明其中一个已在第三方对话中泄露，给前 8 位字符帮助定位
+3. 确认最近一个版本之后没有未授权发布
+
+### 免费兜底通道（已验证可用）
+
+```bash
+npm i github:jkljklkjj/webGame          # 实测装到 1.2.1，文件齐全
+```
+
+npm 上没有新版本时，用户可以直连 GitHub 仓库安装。CDN 也可走 GitHub 分支：
+`https://cdn.jsdelivr.net/gh/jkljklkjj/webGame@main/dist/terminal-arcade.js`（未实测连通性）。
+
+### 发版纪律
+
+- **不要**为 README、文档、注释等非功能改动发版——每发一次都在消耗一个撤不掉的凭据。
+- 攒改动，等两件事之一：2FA 恢复（走 CI，零 token）或攒出实质内容后发一个 `1.3.0` 作为冻结前最终版。
+- 冻结期内的文档改进只走 GitHub，不进 npm。
+
+### 每周监控
+
+```bash
+npm view chargrid-arcade versions
+```
+
+出现未发布的版本号 = token 被滥用。应急顺序：GitHub README 顶部加警告（不需要 npm 权限）→ 工单报安全事件。
+
+### 解冻后立刻做的 6 件事
+
+1. `npm stage reject <staged 1.2.0 的 stage-id>`（`npm stage list` 取 id）
+2. 配 Trusted Publisher：`jkljklkjj` / `webGame` / `publish.yml`，**Allowed actions 勾上 `npm publish`**
+3. `npm version patch && git push --follow-tags`，验证 CI 能发（配置 2 天内必须首发成功）
+4. 吊销所有旧 token（尤其是泄露过的那个）
+5. 包的 Settings → Publishing access → **Require two-factor authentication and disallow tokens**
+6. 确认浏览器里 2FA 换成可用设备 + 重新生成一组恢复码并妥善保存
