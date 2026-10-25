@@ -5,6 +5,7 @@
 [![npm version](https://img.shields.io/npm/v/chargrid-arcade)](https://www.npmjs.com/package/chargrid-arcade)
 [![license](https://img.shields.io/npm/l/chargrid-arcade)](https://github.com/jkljklkjj/webGame/blob/main/LICENSE)
 [![dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)](https://github.com/jkljklkjj/webGame/blob/main/package.json)
+[![ci](https://github.com/jkljklkjj/webGame/actions/workflows/ci.yml/badge.svg)](https://github.com/jkljklkjj/webGame/actions/workflows/ci.yml)
 
 12 个内置游戏，4 个支持同屏双人。80×36 字符网格，固定 1/60 步长，纯 ES module，不引入任何运行时依赖。
 
